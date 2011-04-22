@@ -8,13 +8,13 @@
  * @package plugins
  */
 
-$plugin_description = gettext("Invludes template function to allow the Archive page to drill down to days, not just months.");
+$plugin_description = gettext("Includes template functions to allow the Archive page to drill down to days, not just months. Zenphoto core functionality already permits searcing for photos by day, as well as month.");
 $plugin_author = "Marcus Wong (wongm)";
-$plugin_version = '1.0.0'; 
+$plugin_version = '1.1.0'; 
 $plugin_URL = "http://code.google.com/p/wongm-zenphoto-plugins/";
 
 /**
- * Prints a compendum of dates and links to a search page that will show results of the date
+ * Prints a compendum of months, with links to a second archive page that will the days that blowong to that month.
  *
  * @param string $class optional class
  * @param string $yearid optional class for "year"
@@ -25,10 +25,13 @@ function printAllMonths($class='archive', $yearid='year', $monthid='month', $ord
 	if (!empty($class)){ $class = "class=\"$class\""; }
 	if (!empty($yearid)){ $yearid = "class=\"$yearid\""; }
 	if (!empty($monthid)){ $monthid = "class=\"$monthid\""; }
+	$mr = getOption('mod_rewrite');
 	$datecount = getAllDates($order);
 	$lastyear = "";
-	echo "\n<ul $class>\n";
 	$nr = 0;
+	
+	echo "\n<ul $class>\n";
+	
 	while (list($key, $val) = each($datecount)) {
 		$nr++;
 		if ($key == '0000-00-01') {
@@ -45,25 +48,38 @@ function printAllMonths($class='archive', $yearid='year', $monthid='month', $ord
 			if($nr != 1) {  echo "</ul>\n</li>\n";}
 			echo "<li $yearid>$year\n<ul $monthid>\n";
 		}
-		$archiveURL = ARCHIVE_URL_PATH.'/'.substr($key, 0, 7);
-		$searchURL = SEARCH_URL_PATH.'/archive/'.substr($key, 0, 7);
-		echo "<li><a href=\"".htmlspecialchars($archiveURL)."\" rel=\"nofollow\">$month ($val photos)</a> <a href=\"".htmlspecialchars($searchURL)."\" rel=\"nofollow\">(show all photos)</a></li>\n";
+		
+		if ($mr) {
+			$archiveURL = WEBPATH."/page/archive/" . substr($key, 0, 7);
+		} else {
+			$archiveURL = WEBPATH."/index.php?p=archive&date=" . substr($key, 0, 7);
+		}
+		
+		// link to archive page for all days in this month
+		echo "<li><a href=\"".html_encode($archiveURL)."\" rel=\"nofollow\">$month ($val photos)</a>\n";
+		
+		// link to search page for all photos of this month
+		echo "<a href=\"".html_encode(getSearchURL('', substr($key, 0, 7), '', 0, null))."\" rel=\"nofollow\">(show all)</a></li>\n";
 	}
 	echo "</ul>\n</li>\n</ul>\n";
 }
 
 /**
- * Prints a compendum of dates and links to a search page that will show results of the date
+ * Prints a compendum of dates and links to a search page that will show images taken on that date
  *
  * @param string $class optional class
  * @param string $yearid optional class for "year"
  * @param string $monthid optional class for "month"
  * @param string $order set to 'desc' for the list to be in descending order
  */
-function printAllDays($month) {
+function printSingleMonthArchive($class='archive', $yearid='year', $monthid='month', $order='desc') {
 	if (!empty($class)){ $class = "class=\"$class\""; }
 	if (!empty($yearid)){ $yearid = "class=\"$yearid\""; }
 	if (!empty($monthid)){ $monthid = "class=\"$monthid\""; }
+	
+	$month = $_GET['date'];
+	$splitmonth = split('-', $month);
+	
 	$datecount = getAllDaysInMonth($month, $order);
 	$lastyear = "";
 	echo "\n<ul $class>\n";
@@ -84,13 +100,83 @@ function printAllDays($month) {
 			$lastyear = $year;
 			if($nr != 1) {  echo "</ul>\n";}
 		}
-		$searchURL = SEARCH_URL_PATH.'/archive/'.substr($key, 0, 11);
-		echo "<li><a href=\"".htmlspecialchars($searchURL)."\" rel=\"nofollow\">$month $day ($val photos)</a></li>\n";
+		
+		// link to search results
+		echo "<li><a href=\"".html_encode(getSearchURL('', substr($key, 0, 7), '', 0, null))."\" rel=\"nofollow\">$month $day ($val photos)</a></li>\n";
 	}
 	echo "</ul>\n</li>\n</ul>\n";
 }
 
 /**
+ * Are we listing all months in the Gallery, or the days in a specific month?
+ * Based on the required URL parameter being set
+ *
+ * @return boolean
+ */
+function isSingleMonthArchive() {
+	if (isset($_GET['date']))
+	{
+		$month = $_GET['date'];
+		$splitmonth = split('-', $month);
+		
+		if (sizeof($splitmonth) == 2 && is_numeric($splitmonth[0]) && is_numeric($splitmonth[1])) {
+			return true;
+		}
+	}
+	
+	return false;
+}
+
+/**
+ * Get the title of the month this archive page is for
+ * Based on the required URL parameter being set
+ *
+ * @return string
+ */
+function getSingleMonthArchiveTitle() {
+	if (isSingleMonthArchive()) {
+		$month = $_GET['date'];
+		$splitmonth = split('-', $month);		
+		return strftime('%B %Y', mktime(1, 1, 1, $splitmonth[1], 1, $splitmonth[0]));
+	}
+}
+
+/**
+ * Prints the breadcrumb navigation for archive view.
+ *
+ * @param string $before Insert here the text to be printed before the links
+ * @param string $between Insert here the text to be printed between the links
+ * @param string $after Insert here the text to be printed after the links
+ * @param mixed $truncate if not empty, the max lenght of the description.
+ * @param string $elipsis the text to append to the truncated description
+ */
+function printArchiveBreadcrumb($before = '', $between=' | ', $after = ' | ', $truncate=NULL, $elipsis='...') {
+	if (isSingleMonthArchive()) {
+		if ($mr = getOption('mod_rewrite')) {
+			$archiveURL = WEBPATH."/page/archive/";
+		} else {
+			$archiveURL = WEBPATH."/index.php?p=archive";
+		}
+		
+		echo $before;
+		echo "<a href=\"".html_encode($archiveURL)."\" rel=\"nofollow\">" . gettext("Archive View") . "</a>\n";
+		echo $after;
+	}
+}
+/**
+ * Prints the title of this archive view.
+ *
+ */
+function printArchiveTitle() {
+	if (isSingleMonthArchive()) {
+		echo getSingleMonthArchiveTitle();
+	} else {
+		echo gettext("Archive View");
+	}
+}
+
+/**
+ * Private helper function
  * Retrieves a list of all unique years & months from the images in the gallery
  *
  * @param string $order set to 'desc' for the list to be in descending order
@@ -121,5 +207,4 @@ function getAllDaysInMonth($month, $order='desc') {
 	}
 	return $datecount;
 }
-
 ?>
