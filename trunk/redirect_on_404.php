@@ -141,4 +141,22 @@ function redirectToAlbumOn404()
 		}		
 	}
 }
+
+function status_header( $header ) {
+	if ( 200 == $header )
+		$text = 'OK';
+	elseif ( 301 == $header )
+		$text = 'Moved Permanently';
+	elseif ( 302 == $header )
+		$text = 'Moved Temporarily';
+	elseif ( 304 == $header )
+		$text = 'Not Modified';
+	elseif ( 404 == $header )
+		$text = 'Not Found';
+	elseif ( 410 == $header )
+		$text = 'Gone';
+
+	@header("HTTP/1.1 $header $text");
+	@header("Status: $header $text");
+}
 ?>
