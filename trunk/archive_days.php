@@ -77,7 +77,7 @@ function printSingleMonthArchive($class='archive', $yearid='year', $monthid='mon
 	if (!empty($yearid)){ $yearid = "class=\"$yearid\""; }
 	if (!empty($monthid)){ $monthid = "class=\"$monthid\""; }
 	
-	$month = $_GET['date'];
+	$month = $_GET['page'];
 	$splitmonth = split('-', $month);
 	
 	$datecount = getAllDaysInMonth($month, $order);
@@ -114,9 +114,9 @@ function printSingleMonthArchive($class='archive', $yearid='year', $monthid='mon
  * @return boolean
  */
 function isSingleMonthArchive() {
-	if (isset($_GET['date']))
+	if (isset($_GET['page']))
 	{
-		$month = $_GET['date'];
+		$month = $_GET['page'];
 		$splitmonth = split('-', $month);
 		
 		if (sizeof($splitmonth) == 2 && is_numeric($splitmonth[0]) && is_numeric($splitmonth[1])) {
@@ -135,7 +135,7 @@ function isSingleMonthArchive() {
  */
 function getSingleMonthArchiveTitle() {
 	if (isSingleMonthArchive()) {
-		$month = $_GET['date'];
+		$month = $_GET['page'];
 		$splitmonth = split('-', $month);		
 		return strftime('%B %Y', mktime(1, 1, 1, $splitmonth[1], 1, $splitmonth[0]));
 	}
