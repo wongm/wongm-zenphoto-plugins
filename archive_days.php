@@ -187,7 +187,7 @@ function getAllDaysInMonth($month, $order='desc') {
 	$cleandates = array();
 	$sql = "SELECT `date` FROM ". prefix('images');
 	$special = new Album(new Gallery(), '');
-	$sql .= "WHERE `albumid`!='".$special->id."' AND `date` <= '$month-31' AND `date` >= '$month-01'";
+	$sql .= "WHERE `albumid`!='".$special->id."' AND `date` <= '$month-31 23:59:59' AND `date` >= '$month-01 00:00:00'";
 	if (!zp_loggedin()) { $sql .= " AND `show` = 1"; }
 	$result = query_full_array($sql);
 	foreach($result as $row){
