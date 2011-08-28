@@ -102,7 +102,7 @@ function printSingleMonthArchive($class='archive', $yearid='year', $monthid='mon
 		}
 		
 		// link to search results
-		echo "<li><a href=\"".html_encode(getSearchURL('', substr($key, 0, 7), '', 0, null))."\" rel=\"nofollow\">$month $day ($val photos)</a></li>\n";
+		echo "<li><a href=\"".html_encode(getSearchURL('', $key, '', 0, null))."\" rel=\"nofollow\">$month $day ($val photos)</a></li>\n";
 	}
 	echo "</ul>\n</li>\n</ul>\n";
 }
