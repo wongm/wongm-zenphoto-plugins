@@ -56,7 +56,7 @@ function redirectToCachedImageOn404() {
 				
 			if (strlen($album) > 0 && strlen($filenameToCheck) > 0) {
 				$location = sprintf(FULLWEBPATH . "/zp-core/i.php?a=%s&i=%s&s=%s", $album, $filenameToCheck, $imagesize);
-				status_header(301);
+				status_header(302);
 				header("Location: $location");
 				die();
 			}
@@ -84,8 +84,10 @@ function redirectToImagePageOn404() {
 				$searchResult = $searchResult[0];
 			}
 			
+			$modrewritesuffix = getOption('mod_rewrite_image_suffix');
+			
 			// build up the URL to redirect to
-			$location = rewrite_path("/" . $searchResult["folder"] . "/" . $searchResult["filename"] . im_suffix(),
+			$location = rewrite_path("/" . $searchResult["folder"] . "/" . $searchResult["filename"] . $modrewritesuffix,
 										"/index.php?album=" . $searchResult["folder"] . "&image=" . $searchResult["filename"]);
 			
 			// redirect the browser
@@ -117,9 +119,9 @@ function redirectToAlbumOn404()
 		// query the DB to find any albums with same folder name
 		// NOTE: albums contain the entire folder path 
 		// we only want to look at the bottom level of the hierarchy
-		$searchSql = "SELECT folder FROM " . prefix('albums') . " a WHERE a.folder LIKE '%/" . 
-				mysql_real_escape_string($albumFolderToSearchFor) . "' OR a.folder = '" . 
-				mysql_real_escape_string($albumFolderToSearchFor) . "'";
+		$searchSql = "SELECT folder FROM " . prefix('albums') . " a " . 
+				"WHERE a.folder LIKE '%/" . mysql_real_escape_string($albumFolderToSearchFor) . "' " . 
+				"OR a.folder = '" . mysql_real_escape_string($albumFolderToSearchFor) . "'";
 		
 		$searchResult = query_full_array($searchSql);
 		
