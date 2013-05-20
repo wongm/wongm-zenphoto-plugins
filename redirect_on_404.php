@@ -72,8 +72,8 @@ function redirectToImagePageOn404() {
 	if ($image != '') {
 		// query the DB to find any images with the EXACT same filename as requested
 		$searchSql = "SELECT folder, filename FROM " . prefix('images') . " i INNER JOIN " . 
-				prefix('albums') . " a ON i.albumid = a.id WHERE i.filename = '" . 
-				mysql_real_escape_string($image) . "'";
+				prefix('albums') . " a ON i.albumid = a.id WHERE i.filename = " . 
+				db_quote($image) . "";
 		
 		$searchResult = query_full_array($searchSql);
 		
@@ -84,10 +84,8 @@ function redirectToImagePageOn404() {
 				$searchResult = $searchResult[0];
 			}
 			
-			$modrewritesuffix = getOption('mod_rewrite_image_suffix');
-			
 			// build up the URL to redirect to
-			$location = rewrite_path("/" . $searchResult["folder"] . "/" . $searchResult["filename"] . $modrewritesuffix,
+			$location = rewrite_path("/" . $searchResult["folder"] . "/" . $searchResult["filename"] . IM_SUFFIX,
 										"/index.php?album=" . $searchResult["folder"] . "&image=" . $searchResult["filename"]);
 			
 			// redirect the browser
@@ -100,7 +98,7 @@ function redirectToImagePageOn404() {
 
 function redirectToAlbumOn404()
 {
-	// default Zenphoto behavious does not return bottom level folder
+	// default Zenphoto behaviour does not return bottom level folder
 	if (getOption('mod_rewrite')) {
 		$album = urldecode(sanitize($_GET['album'], 0));
 		//strip trailing slashes
@@ -119,9 +117,9 @@ function redirectToAlbumOn404()
 		// query the DB to find any albums with same folder name
 		// NOTE: albums contain the entire folder path 
 		// we only want to look at the bottom level of the hierarchy
-		$searchSql = "SELECT folder FROM " . prefix('albums') . " a " . 
-				"WHERE a.folder LIKE '%/" . mysql_real_escape_string($albumFolderToSearchFor) . "' " . 
-				"OR a.folder = '" . mysql_real_escape_string($albumFolderToSearchFor) . "'";
+		$searchSql = "SELECT folder FROM " . prefix('albums') . " a WHERE a.folder LIKE " . 
+				db_quote('%'.$albumFolderToSearchFor) . " OR a.folder = " . 
+				db_quote($albumFolderToSearchFor) . "";
 		
 		$searchResult = query_full_array($searchSql);
 		
