@@ -129,9 +129,13 @@ class static_html_cache_mw {
 		foreach($excludeList as $item) {
 			$page_to_exclude = explode("/",$item);
 			if ($_zp_gallery_page == trim($page_to_exclude[0])) {
-				$exclude = trim($page_to_exclude[1]);
-				if(empty($exclude) || $title == $exclude) {
-					return false;
+				if (isset($page_to_exclude[1])) {
+					$exclude = trim($page_to_exclude[1]);
+					if(empty($exclude) || $title == $exclude) {
+						return false;
+					}
+				} else {
+						return false;
 				}
 			}
 		}
@@ -261,8 +265,15 @@ class static_html_cache_mw {
 			case 'search.php':
 				$cachesubfolder = "search";
 				$custompage = $_zp_gallery_page;
-				$words = $_REQUEST['words'];
-				$date = $_REQUEST['date'];
+				$words = '';
+				$date = '';
+				
+				if (isset($_REQUEST['words'])) {
+					$words = $_REQUEST['words'];
+				}
+				if (isset($_REQUEST['date'])) {
+					$date = $_REQUEST['date'];
+				}
 				if (strlen($words) > 0) {
 					$custompage = $words."-".$custompage;
 				}
@@ -292,6 +303,14 @@ class static_html_cache_mw {
 						case 'location':
 							$cachesubfolder = 'locations';
 							$custompage = $_zp_gallery_page;
+							$id = '';
+							$name = '';
+							$box = '';
+							$line = '';
+							$type = '';
+							$sort = '';
+							$search = '';
+							
 							if(isset($_GET['id'])) {
 								$id = "-".sanitize($_GET['id']);
 							}
@@ -320,6 +339,11 @@ class static_html_cache_mw {
 						case 'lineguide':
 							$cachesubfolder = 'lineguides';
 							$custompage = $_zp_gallery_page;
+							$line = '';
+							$year = '';
+							$section = '';
+							$sort = '';
+							
 							if(isset($_GET['line'])) {
 								$line = "-".sanitize($_GET['line']);
 							}
@@ -339,6 +363,8 @@ class static_html_cache_mw {
 						case 'region':
 							$cachesubfolder = 'regions';
 							$custompage = $_zp_gallery_page;
+							$name = '';
+							
 							if(isset($_GET['name'])) {
 								$name = "-".sanitize($_GET['name']);
 							}
@@ -348,6 +374,9 @@ class static_html_cache_mw {
 						default:			
 							$cachesubfolder = "pages";
 							$custompage = $_zp_gallery_page;
+							$title = '';
+							$category = '';
+							
 							if(isset($_GET['title'])) {
 								$title = "-".sanitize($_GET['title']);
 							}
