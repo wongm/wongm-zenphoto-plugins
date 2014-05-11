@@ -21,7 +21,7 @@ $plugin_URL = "http://code.google.com/p/wongm-zenphoto-plugins/";
  * @param string $monthid optional class for "month"
  * @param string $order set to 'desc' for the list to be in descending order
  */
-function printAllMonths($class='archive', $yearid='year', $monthid='month', $order='desc') {
+function printAllMonths($class='archive', $yearid='year', $monthid='month', $order='asc') {
 	if (!empty($class)){ $class = "class=\"$class\""; }
 	if (!empty($yearid)){ $yearid = "class=\"$yearid\""; }
 	if (!empty($monthid)){ $monthid = "class=\"$monthid\""; }
@@ -50,16 +50,16 @@ function printAllMonths($class='archive', $yearid='year', $monthid='month', $ord
 		}
 		
 		if ($mr) {
-			$archiveURL = WEBPATH."/page/archive/" . substr($key, 0, 7);
+			$archiveURL = SEO_WEBPATH . '/' . _ARCHIVE_HOME_ . '/' . substr($key, 0, 7);
 		} else {
-			$archiveURL = WEBPATH."/index.php?p=archive&date=" . substr($key, 0, 7);
+			$archiveURL = SEO_WEBPATH . "/index.php?p=archive&page=" . substr($key, 0, 7);
 		}
 		
 		// link to archive page for all days in this month
 		echo "<li><a href=\"".html_encode($archiveURL)."\" rel=\"nofollow\">$month ($val photos)</a>\n";
 		
 		// link to search page for all photos of this month
-		echo "<a href=\"".html_encode(getSearchURL('', substr($key, 0, 7), '', 0, null))."\" rel=\"nofollow\">(show all)</a></li>\n";
+		echo "<a href=\"".html_encode(getSearchURL(null, substr($key, 0, 7), null, 0, null))."\" rel=\"nofollow\">(show all)</a></li>\n";
 	}
 	echo "</ul>\n</li>\n</ul>\n";
 }
@@ -72,7 +72,7 @@ function printAllMonths($class='archive', $yearid='year', $monthid='month', $ord
  * @param string $monthid optional class for "month"
  * @param string $order set to 'desc' for the list to be in descending order
  */
-function printSingleMonthArchive($class='archive', $yearid='year', $monthid='month', $order='desc') {
+function printSingleMonthArchive($class='archive', $yearid='year', $monthid='month', $order='asc') {
 	if (!empty($class)){ $class = "class=\"$class\""; }
 	if (!empty($yearid)){ $yearid = "class=\"$yearid\""; }
 	if (!empty($monthid)){ $monthid = "class=\"$monthid\""; }
@@ -102,7 +102,7 @@ function printSingleMonthArchive($class='archive', $yearid='year', $monthid='mon
 		}
 		
 		// link to search results
-		echo "<li><a href=\"".html_encode(getSearchURL('', $key, '', 0, null))."\" rel=\"nofollow\">$month $day ($val photos)</a></li>\n";
+		echo "<li><a href=\"".html_encode(getSearchURL(null, $key, null, 0, null))."\" rel=\"nofollow\">$month $day ($val photos)</a></li>\n";
 	}
 	echo "</ul>\n</li>\n</ul>\n";
 }
@@ -153,9 +153,9 @@ function getSingleMonthArchiveTitle() {
 function printArchiveBreadcrumb($before = '', $between=' | ', $after = ' | ', $truncate=NULL, $elipsis='...') {
 	if (isSingleMonthArchive()) {
 		if ($mr = getOption('mod_rewrite')) {
-			$archiveURL = WEBPATH."/page/archive/";
+			$archiveURL = SEO_WEBPATH . '/' . _ARCHIVE_HOME_ . '/';
 		} else {
-			$archiveURL = WEBPATH."/index.php?p=archive";
+			$archiveURL = SEO_WEBPATH . "/index.php?p=archive";
 		}
 		
 		echo $before;
@@ -185,9 +185,7 @@ function printArchiveTitle() {
 function getAllDaysInMonth($month, $order='desc') {
 	$alldates = array();
 	$cleandates = array();
-	$sql = "SELECT `date` FROM ". prefix('images');
-	$special = new Album(new Gallery(), '');
-	$sql .= "WHERE `albumid`!='".$special->id."' AND `date` <= '$month-31 23:59:59' AND `date` >= '$month-01 00:00:00'";
+	$sql = "SELECT `date` FROM ". prefix('images') . " WHERE `date` <= '$month-31 23:59:59' AND `date` >= '$month-01 00:00:00'";
 	if (!zp_loggedin()) { $sql .= " AND `show` = 1"; }
 	$result = query_full_array($sql);
 	foreach($result as $row){
