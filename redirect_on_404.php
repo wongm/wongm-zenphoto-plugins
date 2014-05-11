@@ -38,6 +38,7 @@ function redirectToCachedImageOn404() {
 		$album = str_replace("cache/", "", $album);
 			
 		// try to find the image size
+		$imagesize = null;
 		$imageparams = explode("_", $filenameToCheck);
 		
 		// separate the image size from file extension
@@ -99,10 +100,12 @@ function redirectToImagePageOn404() {
 function redirectToAlbumOn404()
 {
 	// default Zenphoto behaviour does not return bottom level folder
-	if (getOption('mod_rewrite')) {
+	if (getOption('mod_rewrite') AND isset($_GET['album'])) {
 		$album = urldecode(sanitize($_GET['album'], 0));
 		//strip trailing slashes
-		if (substr($album, -1, 1) == '/') $album = substr($album, 0, strlen($album)-1);		
+		if (substr($album, -1, 1) == '/') {
+			$album = substr($album, 0, strlen($album)-1);
+		}
 	// load global variables from Zenphoto's index.php
 	} else {
 		global $album;
