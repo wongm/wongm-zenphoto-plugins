@@ -46,7 +46,7 @@ if (OFFSET_PATH == 2) {	//	clear the cache upon upgrade
 }
 
 $_zp_HTML_cache = new static_html_cache_mw();
-if (isset($zp_request) && $zp_request) {
+if (isset($_zp_HTML_cache) && $_zp_HTML_cache) {
 	$_zp_HTML_cache->startHTMLCache();
 }
 
@@ -407,7 +407,7 @@ class static_html_cache_mw {
 				break;
 		}
 		if (getOption('obfuscate_cache')) {
-			$cachefilepath = sha1($locale.HASH_SEED.$cachefilepath).'.html';
+			$cachefilepath = sha1($locale . HASH_SEED . $cachefilepath);
 		} else {
 			// strip characters that cannot be in file names
 			$cachefilepath = str_replace(array('<','>', ':','"','/','\\','|','?','*'), '_', $cachefilepath).$locale;
