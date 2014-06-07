@@ -243,6 +243,9 @@ function printRollingHitCounter($obj, $break=false)
 // return a string with the required hitcounter text for the current page (this week / this month / all time / etc)
 function getRollingHitcounter($obj, $galleryType="", $splitLines=true)
 {
+	$extraText = '';
+	$toreturn = 0;
+	
 	$alltime = $obj->get('hitcounter');
 	$month = $obj->get('hitcounter_month');
 	$week = $obj->get('hitcounter_week');
@@ -260,7 +263,7 @@ function getRollingHitcounter($obj, $galleryType="", $splitLines=true)
 	
 	// for overall gallery listing pages
 	if ($toreturn > 0) {
-		return "Viewed ".pluralNumberWord($toreturn, 'time').$extraText;
+		return "Viewed " . pluralNumberWord($toreturn, 'time') . $extraText;
 	}
 	
 	// otherwise build up a massive string
