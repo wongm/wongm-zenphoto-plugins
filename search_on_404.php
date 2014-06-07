@@ -41,13 +41,15 @@ function wasLookingForImage() {
 function getSearchTermFrom404() {
 	global $image, $album;
 	
+	$term = '';
+	
 	// get the image and album values from index.php
 	if (isset($image) AND $image != '') 
 	{
 		$term = $image;
 		
 		// remove common file extensions
-		$extensions = array('.html', '.htm', '.php', '.jpg', '.jpeg', '.gif', '.png');		
+		$extensions = array('.html', '.htm', '.php', '.jpg', '.jpeg', '.gif', '.png');
 		foreach ($extensions as $extension)
 		{
 			$term  = str_replace($extension, '', strtolower($term));
