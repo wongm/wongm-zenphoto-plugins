@@ -30,13 +30,16 @@ function redirectToCachedImageOn404() {
 	global $album, $image;
 	
 	if (strtolower(substr($album, 0, 5)) == 'cache') {
+		
+		// convert Zenphoto params into something useful!
+		$filenameToCheck = str_replace(dirname($album), "", basename($album));
+		
 		// check for '_thumb' at the end of the URL - take note, then remove
-		$isThumb = (strtolower(substr($image, (strlen(stripSuffix($image)) - 6), 6)) == '_thumb');
-		$filenameToCheck = str_replace("_thumb.", ".", $image);
+		$isThumb = (strtolower(substr($filenameToCheck, (strlen(stripSuffix($filenameToCheck)) - 6), 6)) == '_thumb');
 		
 		// clean up album URL
-		$album = str_replace("cache/", "", $album);
-			
+		$album = str_replace("cache/", "", dirname($album));
+		
 		// try to find the image size
 		$imagesize = null;
 		$imageparams = explode("_", $filenameToCheck);
@@ -50,7 +53,7 @@ function redirectToCachedImageOn404() {
 		}
 		
 		// we have an image size
-		if (is_numeric($imagesize) && $imagesize > 0) {
+		if ((is_numeric($imagesize) && $imagesize > 0) || $isThumb) {
 			if ($isThumb) {
 				$imagesize = 'thumb';
 			}
@@ -62,7 +65,7 @@ function redirectToCachedImageOn404() {
 				die();
 			}
 		}
-	}	
+	}
 }
 
 function redirectToImagePageOn404() {
