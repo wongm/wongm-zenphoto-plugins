@@ -43,6 +43,11 @@ function getSearchTermFrom404() {
 	
 	$term = '';
 	
+	if (basename($album) != $album)
+	{
+    	$image = basename($album);
+	}
+	
 	// get the image and album values from index.php
 	if (isset($image) AND $image != '') 
 	{
