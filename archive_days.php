@@ -50,7 +50,7 @@ function printAllMonths($class='archive', $yearid='year', $monthid='month', $ord
 		}
 		
 		if ($mr) {
-			$archiveURL = SEO_WEBPATH . '/' . _ARCHIVE_HOME_ . '/?page=' . substr($key, 0, 7);
+			$archiveURL = SEO_WEBPATH . '/' . _ARCHIVE_ . '/?page=' . substr($key, 0, 7);
 		} else {
 			$archiveURL = SEO_WEBPATH . "/index.php?p=archive&page=" . substr($key, 0, 7);
 		}
