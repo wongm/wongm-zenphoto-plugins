@@ -153,7 +153,7 @@ function getSingleMonthArchiveTitle() {
 function printArchiveBreadcrumb($before = '', $between=' | ', $after = ' | ', $truncate=NULL, $elipsis='...') {
 	if (isSingleMonthArchive()) {
 		if ($mr = getOption('mod_rewrite')) {
-			$archiveURL = SEO_WEBPATH . '/' . _ARCHIVE_HOME_ . '/';
+			$archiveURL = SEO_WEBPATH . '/' . _ARCHIVE_ . '/';
 		} else {
 			$archiveURL = SEO_WEBPATH . "/index.php?p=archive";
 		}
@@ -193,7 +193,7 @@ function getAllDaysInMonth($month, $order='desc') {
 	}
 	foreach ($alldates as $adate) {
 		if (!empty($adate)) {
-			$cleandates[] = substr($adate, 0, 11);// . "-01";
+			$cleandates[] = substr($adate, 0, 10);// eg: 2001-12-31
 		}
 	}
 	
