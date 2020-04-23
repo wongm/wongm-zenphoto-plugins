@@ -52,6 +52,7 @@ if (OFFSET_PATH == 2) { //	clear the cache upon upgrade
 
 $_zp_HTML_cache = new static_html_cache_mw();
 zp_register_filter('image_processor_uri', 'static_html_cache_mw::_disable');
+zp_register_filter('admin_head', 'static_html_cache_mw::injectCssToHideImageClearButton');
 
 class static_html_cache_mw {
 
@@ -380,7 +381,10 @@ class static_html_cache_mw {
 		$_zp_HTML_cache->disable();
 		return $uri;
 	}
-
+	
+	
+	static function injectCssToHideImageClearButton() {
+		echo "<style>form[name='purge_image_cache.php'] {display: none;}</style>";
+	}
 }
-
 ?>
