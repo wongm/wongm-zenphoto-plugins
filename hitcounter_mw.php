@@ -148,6 +148,7 @@ class hitcounter_mw {
 							if (!$_zp_current_album->isMyItem(ALBUM_RIGHTS) && getCurrentPage() == 1) {
 		                        $_zp_current_album->set('hitcounter_week', $_zp_current_album->get('hitcounter_week') + 1);
 		                        $_zp_current_album->set('hitcounter_month', $_zp_current_album->get('hitcounter_month') + 1);
+		                        $_zp_current_album->set('hitcounter_year', $_zp_current_album->get('hitcounter_year') + 1);
 								$_zp_current_album->countHit();
 							}
 							break;
@@ -156,6 +157,7 @@ class hitcounter_mw {
 								//update hit counter
 		                        $_zp_current_image->set('hitcounter_week', $_zp_current_image->get('hitcounter_week') + 1);
 		                        $_zp_current_image->set('hitcounter_month', $_zp_current_image->get('hitcounter_month') + 1);
+		                        $_zp_current_image->set('hitcounter_year', $_zp_current_image->get('hitcounter_year') + 1);
 								$_zp_current_image->countHit();
 							}
 							break;
@@ -247,15 +249,19 @@ function getRollingHitcounter($obj, $galleryType="", $splitLines=true)
 	$toreturn = 0;
 	
 	$alltime = $obj->get('hitcounter');
-	$month = $obj->get('hitcounter_month');
-	$week = $obj->get('hitcounter_week');
+	$hitcounterYear = $obj->get('hitcounter_year');
+	$hitcounterMonth = $obj->get('hitcounter_month');
+	$hitcounterWeek = $obj->get('hitcounter_week');
 	
 	// return just a single row, for the overall gallery listing pages
-	if ($galleryType == 'this-month') {
-		$toreturn = $month;
+	if ($galleryType == 'this-year') {
+		$toreturn = $hitcounterYear;
+		$extraText = " this year";
+	} else if ($galleryType == 'this-month') {
+		$toreturn = $hitcounterMonth;
 		$extraText = " this month";
 	} else if ($galleryType == 'this-week') {
-		$toreturn = $week;
+		$toreturn = $hitcounterWeek;
 		$extraText = " this week";
 	} else if ($galleryType == 'all-time') {
 		$toreturn = $alltime;
@@ -273,17 +279,17 @@ function getRollingHitcounter($obj, $galleryType="", $splitLines=true)
 		return "";
 	}
 	
-	if ($week > 0) {
-		$toreturn .= "<br/>(".pluralNumberWord($week, 'time')." this week";
+	if ($hitcounterWeek > 0) {
+		$toreturn .= "<br/>(".pluralNumberWord($hitcounterWeek, 'time')." this week";
 		
-		if ($month > 0) {
-			$toreturn .= ", ".pluralNumberWord($month, 'time')." this month)";
-		} else {
-			$toreturn .= ")";
+		if ($hitcounterMonth > 0) {
+			$toreturn .= ", ".pluralNumberWord($hitcounterMonth, 'time')." this month";
 		}
-	} else if ($month > 0) {
-		$toreturn .= "<br/>(".pluralNumberWord($month, 'time')." this month)";
+	} else if ($hitcounterMonth > 0) {
+		$toreturn .= "<br/>(".pluralNumberWord($hitcounterMonth, 'time')." this month";
 	}
+	
+	$toreturn .= ", ".pluralNumberWord($hitcounterYear, 'time')." this year)";
 	
 	// formattting fix for album page, when not in EXIF box
 	if (!$splitLines) {
@@ -300,23 +306,32 @@ function updateHitcounterDates()
 
 function updateHitcounterDatesFor($type)
 {
+	global $_zp_db;
+	
 	$time = time();
 	$dateCurrent = date("Y-m-d");
 	$dateLastWeek = date("Y-m-d", $time - (60*60*24*6.5));
 	$dateLastMonth = date("Y-m-d", $time - (60*60*24*30));
+	$dateLastYear = date("Y-m-d", $time - (60*60*24*365));
 	
 	// ensure all new images have the reset date set to today
-	$sqlToReset = "UPDATE " . prefix($type) . " SET hitcounter_month_reset = '$dateCurrent' WHERE hitcounter_month_reset IS NULL";
-	query($sqlToReset);
+	$sqlToReset = "UPDATE " . $_zp_db->prefix($type) . " SET hitcounter_year_reset = '$dateCurrent' WHERE hitcounter_year_reset IS NULL";
+	$_zp_db->query($sqlToReset);
 	
-	$sqlToReset = "UPDATE " . prefix($type) . " SET hitcounter_week_reset = '$dateCurrent' WHERE hitcounter_week_reset IS NULL";
-	query($sqlToReset);
+	$sqlToReset = "UPDATE " . $_zp_db->prefix($type) . " SET hitcounter_month_reset = '$dateCurrent' WHERE hitcounter_month_reset IS NULL";
+	$_zp_db->query($sqlToReset);
+	
+	$sqlToReset = "UPDATE " . $_zp_db->prefix($type) . " SET hitcounter_week_reset = '$dateCurrent' WHERE hitcounter_week_reset IS NULL";
+	$_zp_db->query($sqlToReset);
 	
 	// reset the week / month hitcounter if required
-	$sqlToReset = "UPDATE " . prefix($type) . " SET hitcounter_month_reset = '$dateCurrent', hitcounter_month = 0 WHERE hitcounter_month_reset < '$dateLastMonth'";
-	query($sqlToReset);
+	$sqlToReset = "UPDATE " . $_zp_db->prefix($type) . " SET hitcounter_year_reset = '$dateCurrent', hitcounter_year = 0 WHERE hitcounter_year_reset < '$dateLastYear'";
+	$_zp_db->query($sqlToReset);
 	
-	$sqlToReset = "UPDATE " . prefix($type) . " SET hitcounter_week_reset = '$dateCurrent', hitcounter_week = 0 WHERE hitcounter_week_reset < '$dateLastWeek'";
-	query($sqlToReset);
+	$sqlToReset = "UPDATE " . $_zp_db->prefix($type) . " SET hitcounter_month_reset = '$dateCurrent', hitcounter_month = 0 WHERE hitcounter_month_reset < '$dateLastMonth'";
+	$_zp_db->query($sqlToReset);
+	
+	$sqlToReset = "UPDATE " . $_zp_db->prefix($type) . " SET hitcounter_week_reset = '$dateCurrent', hitcounter_week = 0 WHERE hitcounter_week_reset < '$dateLastWeek'";
+	$_zp_db->query($sqlToReset);
 }
 ?>
