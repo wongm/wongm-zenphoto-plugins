@@ -20,15 +20,17 @@
  * <var>ADMIN</var> privileges or if he is the manager of an album being viewed or whose images are
  * being viewed. Likewise, Zenpage News and Pages are not cached when viewed by the author.
  *
- * @author Malte Müller (acrylian)
- * @package plugins
- * @subpackage admin
+ * @author Malte Müller (acrylian), Stephen Billard (sbillard)
+ * @package zpcore\plugins\statichtmlcache
  */
 $plugin_is_filter = 400 | CLASS_PLUGIN;
 $plugin_description = gettext("Adds static HTML cache functionality to Zenphoto.");
 $plugin_author = "Malte Müller (acrylian), Stephen Billard (sbillard)";
+$plugin_category = gettext('Admin');
+$option_interface = 'staticHTMLCacheMWOptions';
 
-$option_interface = 'static_html_cache_mw';
+zp_register_filter('admin_utilities_buttons', 'static_html_cache_mw::overviewbutton');
+zp_register_filter('show_change', 'static_html_cache_mw::clearOnPublish');
 
 $cache_path = SERVERPATH . '/' . STATIC_CACHE_FOLDER . "/";
 if (!file_exists($cache_path)) {
@@ -36,7 +38,7 @@ if (!file_exists($cache_path)) {
 		die(gettext("Static HTML Cache folder could not be created. Please try to create it manually via FTP with chmod 0777."));
 	}
 }
-$cachesubfolders = array("albums", "images", "pages");
+$cachesubfolders = array('index', 'albums', 'images', 'pages', 'news');
 foreach ($cachesubfolders as $cachesubfolder) {
 	$cache_folder = $cache_path . $cachesubfolder . '/';
 	if (!file_exists($cache_folder)) {
@@ -50,13 +52,60 @@ if (OFFSET_PATH == 2) { //	clear the cache upon upgrade
 	static_html_cache_mw::clearHTMLCache();
 }
 
-$_zp_HTML_cache = new static_html_cache_mw();
+$_zp_html_cache = new static_html_cache_mw();
 zp_register_filter('image_processor_uri', 'static_html_cache_mw::_disable');
-zp_register_filter('admin_head', 'static_html_cache_mw::injectCssToHideImageClearButton');
+
+class staticHTMLCacheMWOptions {
+
+	function __construct() {
+		setOptionDefault('static_cache_expire', 86400);
+		setOptionDefault('static_cache_excludedpages', 'search.php/,contact.php/,register.php/,favorites.php/');
+		setOptionDefault('static_cache_albums', 0);
+		setOptionDefault('static_cache_images', 0);
+		setOptionDefault('static_cache_news', 0);
+		setOptionDefault('static_cache_pages', 0);
+	}
+
+	function getOptionsSupported() {
+		$list = array(
+				'<em>' . gettext('Albums') . '</em>' => 'static_cache_albums',
+				'<em>' . gettext('Images') . '</em>' => 'static_cache_images');
+		if (extensionEnabled('zenpage')) {
+			$list['<em>' . gettext('News') . '</em>'] = 'static_cache_news';
+			$list['<em>' . gettext('Pages') . '</em>'] = 'static_cache_pages';
+		} else {
+			setOption('static_cache_news', 0);
+			setOption('static_cache_pages', 0);
+		}
+		return array(
+				gettext('Static HTML cache expire') => array(
+						'key' => 'static_cache_expire',
+						'type' => OPTION_TYPE_TEXTBOX,
+						'desc' => gettext("When the cache should expire in seconds. Default is 86400 seconds (1 day  = 24 hrs * 60 min * 60 sec).")),
+				gettext('Excluded pages') => array(
+						'key' => 'static_cache_excludedpages',
+						'type' => OPTION_TYPE_TEXTBOX,
+						'desc' => gettext("The list of pages to be excluded from cache generation. Pages that can be excluded are custom theme pages including Zenpage pages (these optionally more specific by titlelink) and the standard theme files image.php (optionally by image file name), album.php (optionally by album folder name) or index.php.<br /> If you want to exclude a page completely enter <em>page-filename.php/</em>. <br />If you want to exclude a page by a specific title, image filename, or album folder name enter <em>pagefilename.php/titlelink or image filename or album folder</em>. Separate several entries by comma.<br />") .
+						'<div class="notebox">' . gettext("<strong>NOTE:</strong> In order to work correctly, the following theme pages must be excluded from cache generation: <em>search.php, contact.php, register.php</em> and <em>favorites.php</em>") . '</div>'),
+				gettext('Purge cache files') => array(
+				'key' => 'static_cache_items',
+				'type' => OPTION_TYPE_CHECKBOX_ARRAY,
+				'order' => 0,
+				'checkboxes' => $list,
+				'desc' => gettext('If a <em>type</em> is checked, the HTML caches for the item will be purged when the published state of an item of <em>type</em> changes.') .
+				'<div class="notebox">' . gettext('<strong>NOTE:</strong> The entire cache is cleared since there is no way to ascertain if a gallery page contains dependencies on the item.') . '</div>' )
+		);
+	}
+
+	function handleOption($option, $currentValue) {
+		
+	}
+
+}
 
 class static_html_cache_mw {
 
-	var $enabled = true; // manual disable caching a page
+	public $enabled = true; // manual disable caching a page
 	private $pageCachePath = NULL;
 	private $dirty;
 
@@ -86,16 +135,16 @@ class static_html_cache_mw {
 				break;
 			case 'pages.php':
 				$obj = $_zp_current_zenpage_page;
-				$title = $_zp_current_zenpage_page->getTitlelink();
+				$title = $_zp_current_zenpage_page->getName();
 				break;
 			case 'news.php':
 				if (in_context(ZP_ZENPAGE_NEWS_ARTICLE)) {
 					$obj = $_zp_current_zenpage_news;
-					$title = $obj->getTitlelink();
+					$title = $obj->getName();
 				} else {
 					if (in_context(ZP_ZENPAGE_NEWS_CATEGORY)) {
 						$obj = $_zp_current_category;
-						$title = $obj->getTitlelink();
+						$title = $obj->getName();
 					} else {
 						$obj = NULL;
 						$title = NULL;
@@ -117,7 +166,7 @@ class static_html_cache_mw {
 		$accessType = checkAccess();
 		if ($accessType) {
 			if (is_numeric($accessType)) {
-				$accessType = 'zp_user_auth';
+				$accessType = 'zpcms_auth_user';
 			} else if ($accessType == 'zp_public_access' && count($_zp_authority->getAuthCookies()) > 0) {
 				$accessType .= '1'; // logged in some sense
 			}
@@ -224,7 +273,7 @@ class static_html_cache_mw {
 	 */
 	function createCacheFilepath($accessType) {
 		global $_zp_current_image, $_zp_current_album, $_zp_gallery_page, $_zp_authority,
-		$_zp_current_zenpage_news, $_zp_current_category, $_zp_current_zenpage_page, $_zp_gallery, $_zp_page, $_zp_current_search;
+		$_zp_current_zenpage_news, $_zp_zenpage, $_zp_current_category, $_zp_current_zenpage_page, $_zp_gallery, $_zp_page, $_zp_current_search;
 		// just make sure these are really empty
 		$cachefilepath = $_zp_gallery->getCurrentTheme() . '_' . str_replace('zp_', '', $accessType) . '_';
 		$album = "";
@@ -246,6 +295,13 @@ class static_html_cache_mw {
         $currentDateTime->setTimezone($melbourneTimezone);
 		
 		switch ($_zp_gallery_page) {
+			case 'index.php':
+				$cachesubfolder = "index";
+				$cachefilepath .= "index";
+				$cachefilepath .= '_sortype-' . $_zp_gallery->getSortType();
+				$cachefilepath .= '_sortdir-' . $_zp_gallery->getSortDirection();
+				$cachefilepath .= $currentDateTime->format('Y-m-d');
+				break;
 			case 'album.php':
 			case 'image.php':
 				$cachesubfolder = "albums";
@@ -255,23 +311,36 @@ class static_html_cache_mw {
 					$image = "-" . $_zp_current_image->filename;
 				}
 				$cachefilepath .= $album . $image;
+				if($_zp_gallery_page == 'album.php') {
+					$cachefilepath .= '_albsortype-' . $_zp_current_album->getSortType('album');
+					$cachefilepath .= '_albsortdir-' . $_zp_current_album->getSortDirection('album');
+					$cachefilepath .= '_imgsortype-' . $_zp_current_album->getSortType('image');
+					$cachefilepath .= '_imgsortdir-' . $_zp_current_album->getSortDirection('image');
+				}
 				if (in_context(ZP_SEARCH_LINKED)) {
 					$cachefilepath .= '_search_' . stripcslashes($_zp_current_search->codifySearchString());
 				} 
 				break;
 			case 'pages.php':
 				$cachesubfolder = "pages";
-				$cachefilepath .= 'page-' . $_zp_current_zenpage_page->getTitlelink();
+				$cachefilepath .= 'page-' . $_zp_current_zenpage_page->getName();
 				break;
 			case 'news.php':
-				$cachesubfolder = "pages";
+				$cachesubfolder = "news";
+				$cachefilepath .= 'news';
 				if (is_object($_zp_current_zenpage_news)) {
-					$title = "-" . $_zp_current_zenpage_news->getTitlelink();
+					$title = "-" . $_zp_current_zenpage_news->getName();
+				} 
+				if (!is_object($_zp_current_category) && !is_object($_zp_current_zenpage_news)) {
+					$cachefilepath .= '_sortype-' . $_zp_zenpage->getSortType();
+					$cachefilepath .= '_sortdir-' . $_zp_zenpage->getSortDirection();
 				}
 				if (is_object($_zp_current_category)) {
-					$category = "_cat-" . $_zp_current_category->getTitlelink();
-				}
-				$cachefilepath .= 'news' . $category . $title;
+					$category = "_cat-" . $_zp_current_category->getName();
+					$category .= '_catsortype-' . $_zp_current_category->getSortType();
+					$category .= '_catsortdir-' . $_zp_current_category->getSortDirection();
+				} 
+				$cachefilepath .= $category . $title;
 				break;
 			case 'archive.php':
 				$cachesubfolder = "pages";
@@ -281,7 +350,6 @@ class static_html_cache_mw {
 				}
 				$cachefilepath .= 'archive-' . $page;
 				break;
-			case 'index.php':
 			case 'on-this-day.php':
 				$cachesubfolder = "pages";
 				if (isset($_GET['date'])) {
@@ -291,8 +359,16 @@ class static_html_cache_mw {
 				}
 				$cachefilepath .= stripSuffix($_zp_gallery_page) . '-' . $date;
 				break;
+			case 'rss-updates.php':
+				$cachesubfolder = "rss";
+				$page = '-';
+				if (isset($_GET['page'])) {
+    				$page .= $_GET['page'];
+				}
+				$cachefilepath .= 'rss-updates' . $page;
+				break;
 			case 'rss-on-this-day.php':
-				$cachesubfolder = "pages";
+				$cachesubfolder = "rss";
 				$currentHour = $currentDateTime->format('H');
                 if ($currentHour < (int)getOption('wongm_rss_hour_threshold'))
                 {
@@ -337,7 +413,7 @@ class static_html_cache_mw {
 	 */
 	static function clearHTMLCache($folder = NULL) {
 		if (is_null($folder)) {
-			$cachesubfolders = array("index", "albums", "images", "pages");
+			$cachesubfolders = array('index', 'albums', 'images', 'pages', 'news');
 			foreach ($cachesubfolders as $cachesubfolder) {
 				removeDir(SERVERPATH . '/' . STATIC_CACHE_FOLDER . "/" . $cachesubfolder, true);
 			}
@@ -350,26 +426,11 @@ class static_html_cache_mw {
 	 * call to disable caching a page
 	 */
 	static function disable() {
-		global $_zp_HTML_cache;
-		$_zp_HTML_cache->enabled = false;
+		global $_zp_html_cache;
+		$_zp_html_cache->enabled = false;
 	}
 
-	function static_html_cache_mw_options() {
-		setOptionDefault('static_cache_expire', 86400);
-		setOptionDefault('static_cache_excludedpages', 'search.php/,contact.php/,register.php/,favorites.php/');
-	}
-
-	function getOptionsSupported() {
-		return array(gettext('Static HTML cache expire')	 => array('key'	 => 'static_cache_expire', 'type' => OPTION_TYPE_TEXTBOX,
-										'desc' => gettext("When the cache should expire in seconds. Default is 86400 seconds (1 day  = 24 hrs * 60 min * 60 sec).")),
-						gettext('Excluded pages')						 => array('key'	 => 'static_cache_excludedpages', 'type' => OPTION_TYPE_TEXTBOX,
-										'desc' => gettext("The list of pages to be excluded from cache generation. Pages that can be excluded are custom theme pages including Zenpage pages (these optionally more specific by titlelink) and the standard theme files image.php (optionally by image file name), album.php (optionally by album folder name) or index.php.<br /> If you want to exclude a page completely enter <em>page-filename.php/</em>. <br />If you want to exclude a page by a specific title, image filename, or album folder name enter <em>pagefilename.php/titlelink or image filename or album folder</em>. Separate several entries by comma.")),
-		);
-	}
-
-	function handleOption($option, $currentValue) {
-
-	}
+	
 
 	/**
 	 * used to disable cashing when the uri is an image processor uri
@@ -377,14 +438,50 @@ class static_html_cache_mw {
 	 * @return string
 	 */
 	static function _disable($uri) {
-		global $_zp_HTML_cache;
-		$_zp_HTML_cache->disable();
+		global $_zp_html_cache;
+		$_zp_html_cache->disable();
 		return $uri;
 	}
-	
-	
-	static function injectCssToHideImageClearButton() {
-		echo "<style>form[name='purge_image_cache.php'] {display: none;}</style>";
+
+	/**
+	 * Adds the utility  button for cache clearing
+	 * 
+	 * @since 1.6.1 moved from cacheManager
+	 * 
+	 * @param array $buttons
+	 * @return string
+	 */
+	static function overviewbutton($buttons) {
+		$buttons[] = array(
+				'category' => gettext('Cache'),
+				'enable' => true,
+				'button_text' => gettext('Purge HTML cache'),
+				'formname' => 'clearcache_button',
+				'action' => FULLWEBPATH . '/' . ZENFOLDER . '/admin.php?action=clear_html_cache',
+				'icon' => 'images/edit-delete.png',
+				'title' => gettext('Clear the static HTML cache. HTML pages will be re-cached as they are viewed.'),
+				'alt' => '',
+				'hidden' => '<input type="hidden" name="action" value="clear_html_cache">',
+				'rights' => ADMIN_RIGHTS,
+				'XSRFTag' => 'ClearHTMLCache'
+		);
+		return $buttons;
 	}
+	
+	/**
+	 *
+	 * Clears the html cache for items if published and this is enabled on the options
+	 * 
+	 * @since 1.6.1 former published() method functionality moved from cacheManager
+	 * 
+	 * @param object $obj
+	 */
+	static function clearOnPublish($obj) {
+		global $_zp_html_cache;
+		if (getOption('static_cache_' . $obj->table)) {
+			$_zp_html_cache->clearHTMLCache();
+		}
+		return $obj;
+	}
+	
 }
-?>
