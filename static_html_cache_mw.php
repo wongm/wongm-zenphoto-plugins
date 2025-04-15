@@ -31,6 +31,7 @@ $option_interface = 'staticHTMLCacheMWOptions';
 
 zp_register_filter('admin_utilities_buttons', 'static_html_cache_mw::overviewbutton');
 zp_register_filter('show_change', 'static_html_cache_mw::clearOnPublish');
+zp_register_filter('admin_head', 'static_html_cache_mw::hideButton');
 
 $cache_path = SERVERPATH . '/' . STATIC_CACHE_FOLDER . "/";
 if (!file_exists($cache_path)) {
@@ -185,6 +186,13 @@ class static_html_cache_mw {
 			}
 		}
 		return $accessType;
+	}
+	
+	static function hideButton()
+	{
+?>
+<style>form[name="purge_image_cache"] { display: none; }</style>
+<?
 	}
 
 	/**
