@@ -153,7 +153,7 @@ class hitcounter_mw {
 							}
 							break;
 						case 'image.php':
-							if (!$_zp_current_album->isMyItem(ALBUM_RIGHTS)) {
+							if (!$_zp_current_album->isMyItem(ALBUM_RIGHTS) && isset($_GET['hitcounter'])) {
 								//update hit counter
 		                        $_zp_current_image->set('hitcounter_week', $_zp_current_image->get('hitcounter_week') + 1);
 		                        $_zp_current_image->set('hitcounter_month', $_zp_current_image->get('hitcounter_month') + 1);

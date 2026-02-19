@@ -125,6 +125,12 @@ class static_html_cache_mw {
 		if (zp_loggedin(ADMIN_RIGHTS)) { // don't cache for admin
 			return false;
 		}
+		
+		// can't cache the hitcounter actor
+		 if (isset($_GET['hitcounter'])) {
+			return false;
+		 }
+		
 		switch ($_zp_gallery_page) {
 			case "image.php": // does it really makes sense to exclude images and albums?
 				$obj = $_zp_current_album;
